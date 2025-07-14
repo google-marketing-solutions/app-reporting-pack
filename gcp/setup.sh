@@ -167,7 +167,7 @@ build_docker_image_gcr() {
 
 
 set_iam_permissions() {
-  required_roles="storage.objectViewer artifactregistry.repoAdmin compute.admin monitoring.editor logging.logWriter iam.serviceAccountTokenCreator pubsub.publisher run.invoker"
+  required_roles="storage.objectViewer artifactregistry.repoAdmin compute.admin monitoring.editor logging.logWriter iam.serviceAccountTokenCreator iam.serviceAccountUser pubsub.publisher run.invoker"
   echo "Setting up IAM permissions"
   for role in $required_roles; do
     gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -388,7 +388,7 @@ enable_private_google_access() {
 check_owners() {
   local project_admins=$(gcloud projects get-iam-policy $PROJECT_ID \
     --flatten="bindings" \
-    --filter="bindings.role=roles/owner" \
+    --filter="bindings.role=roles/admin" \
     --format="value(bindings.members[])"
   )
   if [[ ! $project_admins =~ $USER_EMAIL ]]; then
