@@ -47,8 +47,8 @@ solution_name="App Reporting Pack"
 solution_name_lowercase=$(echo $solution_name | tr '[:upper:]' '[:lower:]' |\
   tr ' ' '_')
 
-API_VERSION="20"
-supported_api_versions="18 19 20"
+API_VERSION="21"
+supported_api_versions="19 20 21"
 quiet="n"
 generate_config_only="n"
 validate_ads_config="n"
