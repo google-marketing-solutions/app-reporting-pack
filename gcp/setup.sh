@@ -176,6 +176,10 @@ set_iam_permissions() {
       --condition=None \
       --no-user-output-enabled
   done
+  PUBSUB_SERVICE_ACCOUNT="service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com"
+  gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${PUBSUB_SERVICE_ACCOUNT}"\
+    --role='roles/iam.serviceAccountTokenCreator'
 }
 
 
@@ -388,11 +392,11 @@ enable_private_google_access() {
 check_owners() {
   local project_admins=$(gcloud projects get-iam-policy $PROJECT_ID \
     --flatten="bindings" \
-    --filter="bindings.role=roles/admin" \
+    --filter="bindings.role=roles/owner OR bindings.role=roles/admin" \
     --format="value(bindings.members[])"
   )
   if [[ ! $project_admins =~ $USER_EMAIL ]]; then
-      echo "User $USER_EMAIL does not have admin right to project $PROJECT_ID"
+      echo "User $USER_EMAIL does not have admin / owner rights to project $PROJECT_ID"
       exit
   fi
 }
