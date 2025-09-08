@@ -26,6 +26,7 @@ usage="bash run-local.sh -c|--config <config> -q|--quiet\n\n
 Helper script for running App Reporting Pack queries.\n\n
 -h|--help - show this help message\n
 -c|--config <config> - path to config.yaml file, i.e., path/to/app_reporting_pack.yaml\n
+-a|--account-id <MMC> - MCC / Child account ids\n
 -q|--quiet - skips all confirmation prompts and starts running scripts based on config files\n
 -g|--google-ads-config - path to google-ads.yaml file (by default it expects it in $HOME directory)\n
 -l|--loglevel - loglevel (DEBUG, INFO, WARNING, ERROR), INFO by default.\n
@@ -74,6 +75,10 @@ case $1 in
   -g|--google-ads-config)
     shift
     ads_config=$1
+    ;;
+  -a|--account-id)
+    shift
+    customer_id=$1
     ;;
   --legacy)
     legacy="y"
@@ -504,7 +509,9 @@ bq_dataset_location="US"
 gcloud_project=`gcloud config get-value project 2>/dev/null || echo`
 project=${GOOGLE_CLOUD_PROJECT:-$gcloud_project}
 parse_yaml $ads_config "GOOGLE_ADS_"
-customer_id=$GOOGLE_ADS_login_customer_id
+if [ -z $customer_id ]; then
+  customer_id=$GOOGLE_ADS_login_customer_id
+fi
 video_parsing_mode_output="placeholders"
 cohorts_final="1,3,5,7,14,30"
 skan_schema_mode="placeholders"
