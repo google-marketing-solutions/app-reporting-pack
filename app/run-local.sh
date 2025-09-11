@@ -129,12 +129,6 @@ if [[ ! -z $api_version ]]; then
   validate_api_version $api_version
 fi
 
-if [[ $API_VERSION -gt 16 ]]; then
-  skan_fine="true"
-else
-  skan_fine="false"
-fi
-
 reset_snapshot_data() {
   echo -e "${COLOR}Incremental performance snapshots will be  removed for the following modules: $modules ${NC}"
   if [[ $quiet = "y" ]]; then
@@ -223,7 +217,6 @@ setup() {
 
     if [[ $modules =~ "assets" ]]; then
       ask_for_cohorts
-      ask_for_video_orientation
     fi
     if [[ $modules =~ "ios_skan" ]]; then
       ask_for_skan_queries
@@ -253,15 +246,12 @@ setup() {
       fetch_reports $save_config --log=$loglevel \
         --api-version=$API_VERSION \
         --dry-run \
-        --macro.initial_load_date=$initial_load_date \
-        --template.skan_fine="$skan_fine"
+        --macro.initial_load_date=$initial_load_date
     else
-      echo "Skan: $skan_fine"
       fetch_reports $save_config \
         --log=$loglevel \
         --api-version=$API_VERSION \
-        --dry-run \
-        --template.skan_fine="$skan_fine"
+        --dry-run
     fi
     generate_output_tables $save_config --log=$loglevel --dry-run
     if [[ $skan_answer = "y" ]]; then
@@ -297,14 +287,12 @@ setup() {
       fetch_reports $save_config --log=$loglevel \
         --api-version=$API_VERSION \
         --dry-run \
-        --macro.initial_load_date=$initial_load_date \
-        --template.skan_fine="$skan_fine"
+        --macro.initial_load_date=$initial_load_date
   else
       fetch_reports $save_config --log=$loglevel \
         --api-version=$API_VERSION \
         --dry-run \
-        --macro.initial_load_date=$initial_load_date \
-        --template.skan_fine="$skan_fine"
+        --macro.initial_load_date=$initial_load_date
   fi
   generate_output_tables $save_config --log=$loglevel --dry-run
   if [[ $skan_answer = "y" ]]; then
