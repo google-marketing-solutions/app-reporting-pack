@@ -83,10 +83,12 @@ CREATE OR REPLACE FUNCTION `{bq_dataset}.BinBanners`(width INT64, height INT64)
 RETURNS STRING
 AS (
   CASE
-    WHEN ROUND(SAFE_DIVIDE(width, height), 2) = 1.0 THEN '1:1 (Square)'
-    WHEN ROUND(SAFE_DIVIDE(width, height), 2) = 1.91 THEN '1.91:1 (Landscsape)'
-    WHEN ROUND(SAFE_DIVIDE(width, height), 2) = 0.8 THEN '4:5 (Portrait)'
-    ELSE 'Unknown (Image)'
+    WHEN ROUND(SAFE_DIVIDE(width, height), 2) = 1.0
+      THEN CONCAT(CONCAT(width, 'x', height), ' (Square)')
+    WHEN ROUND(SAFE_DIVIDE(width, height), 2) > 1.0
+      THEN CONCAT(CONCAT(width, 'x', height), ' (Landscape)')
+    WHEN ROUND(SAFE_DIVIDE(width, height), 2) < 1.0
+      THEN CONCAT(CONCAT(width, 'x', height), ' (Portrait)')
     END
 );
 
