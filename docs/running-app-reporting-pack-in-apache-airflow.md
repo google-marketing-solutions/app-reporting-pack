@@ -34,7 +34,7 @@ default_args = {
 with DAG('app_reporting_pack_local', default_args=default_args, schedule_interval="* 0 * * *", catchup=False) as dag:
     app_reporting_pack = DockerOperator(
         task_id='app_reporting_pack_docker',
-        image='ghcr.io/google/app-reporting-pack:latest',
+        image='ghcr.io/google-marketing-solutions/app-reporting-pack:latest',
         api_version='auto',
         auto_remove=True,
         command=[
@@ -84,7 +84,7 @@ default_args = {
 with DAG('app_reporting_pack_remote', default_args=default_args, schedule_interval="* 0 * * *", catchup=False) as dag:
     app_reporting_pack = DockerOperator(
         task_id='app_reporting_pack_docker',
-        image='ghcr.io/google/app-reporting-pack:latest',
+        image='ghcr.io/google-marketing-solutions/app-reporting-pack:latest',
         api_version='auto',
         auto_remove=True,
         environment={
