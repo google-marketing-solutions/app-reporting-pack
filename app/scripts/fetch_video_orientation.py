@@ -85,15 +85,14 @@ def main():
   videos = (
     bq_executor.BigQueryExecutor(bq_project)
     .execute(
-      script_name='video_orientations',
-      query_text=f"""
+      title='video_orientations',
+      query=f"""
       SELECT DISTINCT
         youtube_video_id
       FROM `{bq_dataset}.asset_mapping`
       WHERE type = 'YOUTUBE_VIDEO'
       """,
-    )
-    .youtube_video_id.to_list()
+    ).to_list(row_type='scalar', distinct=True)
   )
   try:
     video_orientations = get_video_orientations_from_youtube_data_api(videos)
