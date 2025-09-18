@@ -126,10 +126,12 @@ garf-youtube-data-api==0.0.9.post0 \
     --hash=sha256:15dde374afca4685ed64a8c4be35020be767c48616b83e4ffc1e2fb5b9b948b3 \
     --hash=sha256:fe8c369d9bc527bb4a776b14f50365c6f45cec8e13cd0cb5d3f424e3f6bd4677
     # via -r requirements.in
-google-ads==28.0.0.post2 \
-    --hash=sha256:5e9435bfc02d5d3fd2521a13bee2ac175233cf556abb9bea78e51c7e81eef9e9 \
-    --hash=sha256:a31e9ad85408b071ed70b1de628c1d0f164ad30266a824adbcd2a287150bd977
-    # via google-ads-api-report-fetcher
+google-ads==28.0.0 \
+    --hash=sha256:0b50bef4a12b8a986edec91f504427ee464ff58ecc5abcf189a0a0539c9b3815 \
+    --hash=sha256:95e3a37582c797c759b0487ecf95410dec111c9dd416f735f08fc09a029221e2
+    # via
+    #   -r requirements.in
+    #   google-ads-api-report-fetcher
 google-ads-api-report-fetcher[bq]==1.17.0 \
     --hash=sha256:95c9f5b9b70dcb803747ca1e0d9104e19e4d152bb21ce2361553bf2a3c805cdf \
     --hash=sha256:f654e72a2f22a7623565fb95746280d967666a1e0f69f6153a4409ef36bbf89e
