@@ -4,6 +4,7 @@ base_template_report_id_v1_2_0=3f042b13-f767-4195-b092-35b94e0b430c
 report_id=$base_template_report_id_v1_2_0
 report_name="app_reporting_pack_copy"
 return_link=0
+incremental=1
 
 while :; do
 case $1 in
@@ -27,6 +28,9 @@ case $1 in
 		;;
   -L|--link)
     return_link=1
+    ;;
+  --no-incremental)
+    incremental=0
     ;;
 	-n|--report-name)
 		shift
