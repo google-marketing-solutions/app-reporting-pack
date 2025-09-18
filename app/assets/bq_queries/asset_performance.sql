@@ -124,6 +124,7 @@ AS (
         ANY_VALUE(youtube_video_title) AS youtube_video_title,
         ANY_VALUE(url) AS url,
         ANY_VALUE(youtube_video_id) AS youtube_video_id,
+        ANY_VALUE(deep_link_uri) AS deep_link_uri,
         ANY_VALUE(height) AS height,
         ANY_VALUE(width) AS width
       FROM `{bq_dataset}.asset_mapping`
