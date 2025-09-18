@@ -111,9 +111,9 @@ garf-core==0.1.4.post1 \
     #   garf-io
     #   garf-youtube-data-api
     #   google-ads-api-report-fetcher
-garf-executors[bq]==0.0.8.post0 \
-    --hash=sha256:069aea00d474a05fb9cb88061b6548b8847ddb30414f83343ddc65ec1bb0d0b5 \
-    --hash=sha256:ad5be60216f8e5cbeab80b0abc680c9081ac1a100c1c2ed7cfa3249fc216fbe5
+garf-executors[bq]==0.0.9 \
+    --hash=sha256:63e31dea6af2e382544e12c606dbff0d81438d724c21caa16008b3063fb240aa \
+    --hash=sha256:f86d51d2d229ba2b2e714e93228a0910a8607bb0e84d83d0cd450734b3a91975
     # via -r requirements.in
 garf-io[bq]==0.0.10 \
     --hash=sha256:d00b79f2b9bdb95e384190700d7d6ef5cb710286696749352656bfaa0305e634 \
