@@ -28,9 +28,9 @@ OBSOLETE_CONFIG=0
 _check_api_version() {
     local api_version=$(cat /tmp/arp.yaml | grep api_version |\
         cut -d ":" -f2 | grep -oE '[0-9]+([.][0-9]+)?')
-    if (( $api_version < 17 )); then
+    if (( $api_version < 19 )); then
         echo "Unsupported API version."
-        echo "Recommended to update to Google Ads API 18."
+        echo "Recommended to update to Google Ads API 21."
         OBSOLETE_CONFIG=$(($OBSOLETE_CONFIG+1))
     fi
 }
@@ -107,7 +107,7 @@ fi
 
 # deploy solution
 echo -e "${CYAN}Upgrading application...${WHITE}"
-./gcp/setup.sh copy_application_scripts build_docker_image_gcr start
+./gcp/setup.sh copy_application_scripts build_docker_image
 
 popd >/dev/null
 

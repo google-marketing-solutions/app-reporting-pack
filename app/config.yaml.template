@@ -20,7 +20,7 @@ gaarf:
     project: YOUR-BQ-PROJECT
     dataset: arp
   # Do not change API version manually
-  api_version: '19'
+  api_version: '21'
   account:
   - 'YOUR_MCC_ID'
   customer_ids_query: SELECT customer.id FROM campaign WHERE campaign.advertising_channel_type
