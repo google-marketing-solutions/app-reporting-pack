@@ -1,0 +1,66 @@
+site_name: App Reporting Pack
+site_url: https://github.com/google-marketing-solutions/app-reporting-pack
+repo_name: App Reporting Pack
+repo_url: https://github.com/google-marketing-solutions/app-reporting-pack
+copyright: Copyright Google 2025
+
+theme:
+  name: material
+  font:
+    text: Google Sans
+    code: Roboto Mono
+  palette:
+    - scheme: default
+      primary: white
+      accent: white
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: white
+      accent: white
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.footer
+    - navigation.tracking
+    - navigation.top
+    - navigation.path
+    - content.code.annotate
+    - content.code.select
+    - content.code.copy
+    - content.tabs.link
+markdown_extensions:
+  - md_in_html
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.blocks.tab:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Installation:
+    - installation/overview.md
+    - Google Cloud: installation/gcp.md
+    - Docker: installation/docker.md
+    - Airflow: installation/airflow.md
+    - Local: installation/local.md
+  - Customization:
+    - SKAN schema: customization/skan.md
+    - Video orientation: customization/video-orientation.md
+    - Backfill: customization/backfill.md
+    - Custom conversions: customization/custom-conversions.md
+  - Dashboard: dashboard/replication.md

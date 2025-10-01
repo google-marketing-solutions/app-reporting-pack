@@ -10,13 +10,16 @@ SKAN postbacks reports are available by default. ARP fetches the SKAN data from 
 
 During the deployment the wizard will ask you to provide a fully qualified SKAN schema table name. In the example below the table name is `arp.skan_schema`. It can be located in any dataset in the current GCP project.
 
-![skan](src/skan.png)
+![skan](images/skan.png)
 
-> When adding schema to an existing `app_reporting_pack.yaml` add the following fields
-> * under `gaarf-bq > params > macro` add `skan_schema_input_table: PROJECT.DATASET.TABLE_NAME`
-> * under `gaarf-bq > params > template` add `has_skan: 'true'`
-> * under `scripts > skan_mode` add `skan_mode: table` (if `skan_mode` is set to `placeholders` replace `placeholders` with `table`)
-> You can refer to [config.yaml.template](../app/config.yaml.template) to check config structure.
+!!!important
+    When adding schema to an existing `app_reporting_pack.yaml` add the following fields:
+
+    * under `gaarf-bq > params > macro` add `skan_schema_input_table: PROJECT.DATASET.TABLE_NAME`
+    * under `gaarf-bq > params > template` add `has_skan: 'true'`
+    * under `scripts > skan_mode` add `skan_mode: table` (if `skan_mode` is set to `placeholders` replace `placeholders` with `table`)
+
+    You can refer to [config.yaml.template](https://github.com/google-marketing-solutions/app-reporting-pack/blob/main/app/config.yaml.template) to check config structure.
 
 The SKAN table schema is expected to have the following fields:
 ```
@@ -33,7 +36,7 @@ The table schema is similar to the format used by trackers like AppsFlyer, Adjus
 
 You can create a SKAN schema table in BQ and copy the data manually, but the most convenient way is to create an external BQ table linked to Google Spreadsheet document with the schema. Then it will be much easier to keep the schema up to date as the BQ table will be automatically updated when you make changes in the Google Sheet. To do so create a Google spreadsheet with the required columns and share the spreadsheet with a service account which has access to BQ (e.g. with Compute Engine default service account). After that create a table as shown below.
 
-![skan_bq](src/skan_bq.png)
+![skan_bq](images/skan_bq.png)
 
 ## Reports Overview
 
@@ -41,43 +44,44 @@ You can create a SKAN schema table in BQ and copy the data manually, but the mos
 
 1. Postback breakdowns and filters. The donut charts are interactive, click on an area to apply filters to the whole sheet.
 
-![postback_breakdown](src/postback_breakdown.png)
+![postback_breakdown](images/skan_postback_breakdown.png)
 
 2. SKAN Installs (postbacks), Google Ads installs and other metrics per campaign
 
-![postback_campaign](src/postback_campaign.png)
+![postback_campaign](images/skan_postback_campaign.png)
 
 3. SKAN Coverage charts. SKAN coverage = SKAN Installs/GAds Installs
 
-![skan_coverage](src/skan_coverage.png)
+![skan_coverage](images/skan_coverage.png)
 
 4. SKAN CPI (Cost per Postback) vs Google Ad CPI
 
-![skan_cpi](src/skan_cpi.png)
+![skan_cpi](images/skan_cpi.png)
 
 5. SKAN Conversion Rate (SKAN Postbacks/clicks) vs Google Ads Conversion Rate & CTR
 
-![skan_conv_rate](src/skan_conv_rate.png)
+![skan_conv_rate](images/skan_conv_rate.png)
 
 
 ### SKAN In-app sheet (postbacks with CV > 0)
 
 1. Postback breakdowns and filters. There is an additional SKAN Event dropdown filter where you can select custom events you want to filter on. The donut charts are interactive, click on an area to apply filters to the whole sheet.
 
-![skan_inapp](src/skan_inapp.png)
+![skan_inapp](images/skan_inapp.png)
 
 > **IMPORTANT**: it’s necessary to manually select biddable SKAN conversions in the filter for the charts on this sheet to make sense.
 
 2. Generic in-app conversions metrics. Count of selected SKAN conversions vs biddable GAds conversions, CPA for the selected SKAN conversions vs GAds CPA, SKAN conversion rate (SKAN conversions/Clicks) vs GAds conversion rate.
 
-![skan_inapp_generic](src/skan_inapp_generic.png)
+![skan_inapp_generic](images/skan_inapp_generic.png)
 
 3. tCPA campaigns metrics. Target CPA vs Google Ads actual CPA vs SKAN CPA over time. SKAN InApp Coverage (SKAN conversions/GAds biddable conversions), SKAN Install Coverage (SKAN Installs/GAds Installs), SKAN Conversions and tCPA Bid Utilization (Actual GAds CPA/Target CPA).
 
-![skan_tcpa](src/skan_tcpa.png)
+![skan_tcpa](images/skan_tcpa.png)
 
 4. tROAS campaigns metrics. SKAN Conversion values vs GAds conversion value. By default it shows SKAN Value Mean, but you can also show Low and High from the optional metrics. Google Ads ROAS vs SKAN ROAS vs Target ROAS. By default SKAN ROAS is calculated using SKAN Value Mean, but you can also show Low and High from the optional metrics. tROAS and SKAN Bid Utilization (actual GAds and SKAN ROAS/Target ROAS) and In-app SKAN Coverage (SKAN InApps/GAds biddable in-apps).
 
-![skan_troas](src/skan_troas.png)
+![skan_troas](images/skan_troas.png)
+
 
 

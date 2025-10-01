@@ -1,17 +1,36 @@
-# Creating App Reporting Pack in Looker Studio
 
-Once data for App Reporting Pack data are generated and stored in BigQuery you can
-proceed with replication of the [App Reporting Pack dashboard](https://lookerstudio.google.com/c/u/0/reporting/3f042b13-f767-4195-b092-35b94e0b430c/page/0hcO).
+!!!important
+    Join [`app-reporting-pack-readers-external`](https://groups.google.com/g/app-reporting-pack-readers-external) Google group  to get access to the [dashboard template](https://lookerstudio.google.com/c/u/0/reporting/3f042b13-f767-4195-b092-35b94e0b430c/page/0hcO).
 
-> **_IMPORTANT:_** After the dashboard is created you need to enable image previews, read details on how it can be done [here](#enable-image-previews).
+If you install ARP in Google Cloud then in most cases you don't need the following procedure. Otherwise use the following command to clone the ARP dashboard.
+
+Once queries ran successfully you can proceed with dashboard replication.
+
+Run the following command in the terminal to get a link for cloning the dashboard:
+
+```
+bash ./app/scripts/create_dashboard.sh -c app/app_reporting_pack.yaml -L
+```
+
+If you're running on a local machine you can omit `-L` flag and then the link will be opened in the browser.
+
+!!!important
+    After the dashboard is created you need to enable image previews, read details on how it can be done [here](#enable-image-previews).
 
 
 ## Automatic creation
 
-1. Go to [`scripts`](../scripts) folder
+1. Go to [`scripts`](https://github.com/google-marketing-solutions/app-reporting-pack/tree/main/app/scripts) folder
 
-2. Run `bash create_dashboard.sh -p <YOUR_BQ_PROJECT_ID> -d <YOUR_BQ_DATASET_ID>` command in the terminal, there YOUR_BQ_PROJECT_ID and YOUR_BQ_DATASET_ID are the names of the BQ project and dataset that contains App Reporting Pack data.\
+2. Run
+```bash
+./create_dashboard.sh -p <YOUR_BQ_PROJECT_ID> -d <YOUR_BQ_DATASET_ID>
+```
+
+where YOUR_BQ_PROJECT_ID and YOUR_BQ_DATASET_ID are the names of the BQ project and dataset that contains App Reporting Pack data.\
+
 You can provide optional arguments to the script:
+
 * `--name="<YOUR_NAME_FOR_THE_DASHBOARD>"` - where YOUR_NAME_FOR_THE_DASHBOARD is the name of the generated dashboard.
 * `--lite` - if you want to install [simplified version of App Reporting Pack](https://datastudio.google.com/c/u/0/reporting/6c386d70-7a1f-4b31-a29b-173f5b671310/page/0hcO)
 
@@ -23,12 +42,13 @@ The process of manual replication consists of two steps:
 * Replication of datasources
 * Replication of dashboard
 
-## Replicate datasources
+### Replicate datasources
 
 Before replicating the dashboard you need to make copies of datasources that power up the dashboard.
 Replication of the datasources is important since they contains multiple calculated metrics which could be problematic to create from scratch.
 
 Make a copy of each of the following datasources used in the template dashboard.
+
 * [asset_performance](https://datastudio.google.com/c/u/0/datasources/cb655b63-49c0-48d6-babf-aa956c369b15)
 * [approval_statuses](https://datastudio.google.com/c/u/0/datasources/cdbfb99c-203c-4eeb-9a57-3d99f34546ee)
 * [creative_excellence](https://datastudio.google.com/c/u/0/datasources/636bab56-3bff-4143-92a2-106206c4ad03)
@@ -38,54 +58,70 @@ Make a copy of each of the following datasources used in the template dashboard.
 
 
 In order to replicate a datasource, please do the following:
+
 * Click on the datasource link above.
+
 * Click on *Make a copy of this datasource*
 
-	![make_copy_datasource](src/make_copy_datasource.png)
+![make_copy_datasource](images/make_copy_datasource.png)
 
 * Confirm copying by clicking *Copy Data Source*
 
-	![confirm](src/copy_confirm.png)
+![confirm](images/copy_confirm.png)
 
 * Select *MY PROJECTS* and either pick a project or enter project id manually (this should be the project where App Reporting Pack tables are located)
-* In Dataset select a BQ dataset where App Reporting Pack tables are located
 
-	![setup project](src/setup_project.png)
+* In Dataset select a BQ dataset where App Reporting Pack tables are located
+![setup project](images/setup_project.png)
+
 * Select a table from the dataset which the name similar to Data Source name (i.e., if Data Source is called *Assets* look for the table which is called *assets*)
 
-	![select table](src/select_table.png)
+![select table](images/select_table.png)
 
 * Confirm copying by clicking *RECONNECT* button.
 
-	![reconnect](src/reconnect.png)
+![reconnect](images/reconnect.png)
 
 
-> Don’t forget to rename the datasource so you can find it easily. I.e. such name as *Copy of BQ Template ARP Assets* is a bit mouthful, you can name it simply *ARP Assets* or *YOUR-COMPANY-NAME ARP Assets*.
+!!!important
+    Don’t forget to rename the datasource so you can find it easily. I.e. such name as *Copy of BQ Template ARP Assets* is a bit mouthful, you can name it simply *ARP Assets* or *YOUR-COMPANY-NAME ARP Assets*.
 
 * Repeat the steps above for all the datasources.
 
 Now that you’ve copied each of the datasources, make a copy of the dashboard and replace each of the template’s datasources with the corresponding datasource you copied.
 
-## Replication of the dashboard
+### Replication of the dashboard
 
-> Please ensure that ALL datasources are created before proceeding to replication of the dashboard.
+!!!important
+    Ensure that ALL datasources are created before proceeding to replication of the dashboard.
 
 [Here](https://datastudio.google.com/c/u/0/reporting/3f042b13-f767-4195-b092-35b94e0b430c/page/0hcO) you can access the template version of the dashboard.
->  [Lite version](https://datastudio.google.com/c/u/0/reporting/6c386d70-7a1f-4b31-a29b-173f5b671310/page/0hcO) of the dashboard is also available.
+
+!!!note
+    [Lite version](https://datastudio.google.com/c/u/0/reporting/6c386d70-7a1f-4b31-a29b-173f5b671310/page/0hcO) of the dashboard is also available.
 
 In order to replicate dashboard please do the following:
 
 * make a [copy of the dashboard](https://datastudio.google.com/c/u/0/reporting/3f042b13-f767-4195-b092-35b94e0b430c/page/0hcO) by clicking on *More options - Make a copy*.
 
-	![copy dashboard](src/copy_dashboard.png)
+![copy dashboard](images/copy_dashboard.png)
 
 * In *Copy this report* window map original datasources to the ones you created in the previous step.
 
-	![datasource association](src/datasource_association.png)
+![datasource association](images/datasource_association.png)
 
 Once all template datasources are replaced with new ones, click *Copy Report* and enjoy your new shiny App Reporting Pack!
 
-## Enable image previews
+## Post setup
+
+### Grant access
+
+Once the dashboard is saved it's important that all its users have access to underlying BigQuery dataset.
+
+If it's not possible, you'll need to change data credentials for all datasources from *Viewer* to *Owner* (see details [here](https://support.google.com/looker-studio/answer/6371135)).
+
+
+### Enable image previews
 
 After the dashboard is created all rendered images are [disabled](https://support.google.com/looker-studio/answer/7570489?hl=en#zippy=%2Cin-this-article). To activate them follow the steps below:
 
@@ -94,5 +130,5 @@ After the dashboard is created all rendered images are [disabled](https://suppor
 * Search for `asset_preview` field
 * Click on three docs and select **Show** to enable preview
 
-	![enable preview](src/preview_enable.png)
+![enable preview](images/preview_enable.png)
 
