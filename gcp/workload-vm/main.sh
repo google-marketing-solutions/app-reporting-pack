@@ -1,8 +1,17 @@
 #!/bin/bash
 
+delete_vm() {
+  gcloud logging write $LOG_NAME "[$(hostname)] Deleting VM"
+  gcp_zone=$(curl -H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance/zone -s | cut -d/ -f4)
+  gcloud compute instances delete $(hostname) --zone ${gcp_zone} -q
+  gcloud logging write $LOG_NAME "[$(hostname)] VM Deleted"
+}
+
+
 LOG_NAME=$(git config -f "./settings.ini" config.name)
 
 echo "Starting entrypoint script"
+trap delete_vm EXIT
 
 # Fetch GCP project_id from Metadata service and set it via gcloud
 project_id=$(curl -H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/project/project-id -s)
@@ -44,14 +53,6 @@ if [[ $exitcode -eq 0 && -n "$gcs_base_path_public" && -n "$create_dashboard_url
   echo "{\"dashboardUrl\":\"$create_dashboard_url\"}" > dashboard.json
   echo "Created dashboard.json with cloning url: $create_dashboard_link"
   gsutil -h "Content-Type:application/json" -h "Cache-Control: no-store" cp dashboard.json $gcs_base_path_public/dashboard.json
-fi
-
-# Delete the VM (fetch a custom metadata key, it can be absent, so returns 404 - handling it with --fail options)
-delete_vm=$(curl -H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance/attributes/delete_vm -s --fail)
-echo "Delete VM: $delete_vm"
-if [[ "$delete_vm" = 'TRUE' ]]; then
-    gcp_zone=$(curl -H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance/zone -s | cut -d/ -f4)
-    gcloud compute instances delete $(hostname) --zone ${gcp_zone} -q
 fi
 
 gcloud logging write $LOG_NAME "[$(hostname)] Docker entrypoint script completed"
