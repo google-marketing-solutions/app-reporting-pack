@@ -103,6 +103,8 @@ if (( $OBSOLETE_CONFIG > 0 )); then
     echo -e "${CYAN}Generating configuration...${WHITE}"
     RUNNING_IN_GCE=true
     ./app/run-local.sh --generate-config-only
+    echo -e "${CYAN}Upgrading application config...${WHITE}"
+    ./gcp/setup.sh copy_application_config
 fi
 
 # deploy solution
