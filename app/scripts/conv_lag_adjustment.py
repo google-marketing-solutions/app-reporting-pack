@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 import gaarf
 from gaarf import api_clients
 from gaarf.cli import utils as gaarf_utils
-from gaarf.io.writers import bigquery_writer
+from garf.io.writers import bigquery_writer
 from src import conv_lag_builder, queries
 
 

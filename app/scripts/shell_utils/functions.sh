@@ -125,10 +125,10 @@ check_gaarf_version() {
     if [[ $major_version -lt 1 ]]; then
       require_newer_gaarf
     fi
-    if [[ $minor_version -lt 15 ]]; then
+    if [[ $minor_version -lt 18 ]]; then
       require_newer_gaarf
     fi
-    if [[ $minor_version -eq 15 && $patch_version -lt 1 ]]; then
+    if [[ $minor_version -eq 18 && $patch_version -lt 2 ]]; then
       require_newer_gaarf
     fi
     echo "google-ads-api-report-fetcher is up-to-date"

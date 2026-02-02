@@ -11,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Entrypoint for performing various backfilling operations."""
 
 import argparse
+import contextlib
 import datetime
 import functools
 import itertools
@@ -27,10 +31,13 @@ import numpy as np
 import pandas as pd
 from gaarf import api_clients
 from gaarf.cli import utils as gaarf_utils
-from gaarf.executors import bq_executor
-from gaarf.io.writers import bigquery_writer
+from garf.executors import bq_executor
+from garf.io.writers import bigquery_writer
 from google.api_core import exceptions as google_api_exceptions
 from src import queries
+
+garf_logger = logging.getLogger('garf.executors.bq_executor')
+garf_logger.setLevel(logging.WARNING)
 
 
 def get_new_date_for_missing_incremental_snapshots(
@@ -45,28 +52,28 @@ def get_new_date_for_missing_incremental_snapshots(
   application when running data fetching.
 
   Args:
-      bigquery_executor: Executor to run big query queries.
-      bq_dataset: BQ dataset to get data from.
-      table_name: BQ table that are checked for incremental snapshots.
+    bigquery_executor: Executor to run big query queries.
+    bq_dataset: BQ dataset to get data from.
+    table_name: BQ table that are checked for incremental snapshots.
   """
   start_date = ''
-  base_table_id = f'{bigquery_executor.project_id}.{bq_dataset}.{table_name}'
+  base_table_id = f'{bigquery_executor.project}.{bq_dataset}.{table_name}'
   base_output_table_id = (
-    f'{bigquery_executor.project_id}.{bq_dataset}_output.{table_name}'
+    f'{bigquery_executor.project}.{bq_dataset}_output.{table_name}'
   )
-  try:
+  query = f'SELECT TABLE_SUFFIX, new_start_date FROM `{base_table_id}_missing`',
+  with contextlib.suppress(bq_executor.BigQueryExecutorError):
     result = bigquery_executor.execute(
-      'missing_incremental_snapshot',
-      f'SELECT TABLE_SUFFIX, new_start_date FROM `{base_table_id}_missing`',
+      title='missing_incremental_snapshot',
+      query=query,
     )
 
-    if not result.empty:
+    if result:
+      result = result.to_pandas()
       start_date = result.new_start_date.squeeze().strftime('%Y-%m-%d')
       suffix = result.TABLE_SUFFIX.squeeze()
       delete_ddl = f'DROP TABLE `{base_output_table_id}_{suffix}`;'
-      bigquery_executor.execute('drop_table', delete_ddl)
-  except bq_executor.BigQueryExecutorException:
-    pass
+      bigquery_executor.execute(title='drop_table', query=delete_ddl)
   print(start_date)
 
 
@@ -281,8 +288,8 @@ def _get_asset_cohorts_snapshots(
   snapshot_dates: set[datetime.date] = set()
   try:
     result = bigquery_executor.execute(
-      'conversion_lags_snapshots',
-      f"""
+      title='conversion_lags_snapshots',
+      query=f"""
       SELECT DISTINCT _TABLE_SUFFIX AS day
       FROM
       `{bq_dataset}.conversion_lags_*`
@@ -294,10 +301,12 @@ def _get_asset_cohorts_snapshots(
       ORDER BY 1
      """,
     )
-  except bq_executor.BigQueryExecutorException:
+  except bq_executor.BigQueryExecutorError:
     logging.warning('Failed to get cohort data.')
     return snapshot_dates
-  if not result.empty and (snapshots_days := set(result.day)):
+  if result and (
+    snapshots_days := set(result['day'].to_list(row_type='scalar'))
+  ):
     snapshot_dates = {
       datetime.datetime.strptime(date, '%Y%m%d').date()
       for date in snapshots_days
@@ -376,9 +385,11 @@ def save_restored_asset_cohort(
     table_id: Full name of the table when snapshot saved to.
   """
   try:
-    bigquery_executor.execute('restore_conversion_lag_snapshot', query)
+    bigquery_executor.execute(
+      title='restore_conversion_lag_snapshot', query=query
+    )
     logging.info("table '%s' has been created", table_id)
-  except bq_executor.BigQueryExecutorException:
+  except bq_executor.BigQueryExecutorError:
     logging.warning("table '%s' already exists", table_id)
 
 
@@ -387,8 +398,8 @@ def _get_bid_budget_snapshot_dates(
 ) -> set[str]:
   try:
     result = bigquery_executor.execute(
-      'bid_budgets_snapshots',
-      f"""
+      title='bid_budgets_snapshots',
+      query=f"""
       SELECT DISTINCT CAST(day AS STRING) AS day
       FROM `{bq_dataset}.bid_budgets_*`
       WHERE
@@ -397,7 +408,7 @@ def _get_bid_budget_snapshot_dates(
         )
       """,
     )
-    if result.empty:
+    if not result:
       today = datetime.datetime.today()
       end_date = today - datetime.timedelta(days=1)
       start_date = today - datetime.timedelta(days=28)
@@ -405,9 +416,9 @@ def _get_bid_budget_snapshot_dates(
         date.strftime('%Y-%m-%d')
         for date in pd.date_range(start_date, end_date).to_pydatetime().tolist()
       }
-    return set(result['day'])
+    return set(result['day'].to_list(row_type='scalar'))
 
-  except bq_executor.BigQueryExecutorException:
+  except bq_executor.BigQueryExecutorError:
     logging.error('Fail to find bid_budget snapshots')
     return set()
 
@@ -451,7 +462,7 @@ def save_restored_change_history(
     daily_history.loc[:, ('day')] = datetime.datetime.strptime(
       date, '%Y-%m-%d'
     ).date()
-    table_id = f'bid_budgets_{date.replace("-","")}'
+    table_id = f'bid_budgets_{date.replace("-", "")}'
     try:
       bq_writer.write(
         gaarf.report.GaarfReport.from_pandas(daily_history), table_id

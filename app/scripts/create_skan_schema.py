@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Module responsible for defining iOS SKAN schema.
 
 SKAN Schema can be copied from existing BigQuery table; if no input table is
@@ -23,7 +26,7 @@ import os
 import smart_open
 import yaml
 from gaarf.cli import utils as gaarf_utils
-from gaarf.executors import bq_executor
+from garf.executors import bq_executor, execution_context
 
 
 def update_config(path: str, mode: str) -> None:
@@ -58,13 +61,14 @@ def has_existing_schema(
     bigquery_executor: Executor responsible for writing data to BigQuery.
     bq_dataset: BigQuery dataset to write data to.
   """
+  query = f'SELECT app_id FROM `{bq_dataset}.skan_schema_input_table` LIMIT 0'
   try:
     bigquery_executor.execute(
-      'check_existing_skan_schema',
-      f'SELECT app_id FROM `{bq_dataset}.skan_schema_input_table` LIMIT 0',
+      title='check_existing_skan_schema',
+      query=query,
     )
     return True
-  except bq_executor.BigQueryExecutorException:
+  except bq_executor.BigQueryExecutorError:
     return False
 
 
@@ -79,19 +83,19 @@ def copy_schema(
     config: GaarfBqConfig with parameters for copying.
   """
   query = """
-            CREATE OR REPLACE TABLE `{bq_dataset}.skan_schema_input_table` AS
-            SELECT
-              app_id,
-              skan_conversion_value,
-              skan_event_count,
-              skan_event_value_low,
-              skan_event_value_high,
-              skan_event_value_mean,
-              skan_mapped_event
-            FROM `{skan_schema_input_table}`;
-
-        """
-  bigquery_executor.execute('skan_schema', query, config.params)
+  CREATE OR REPLACE TABLE `{bq_dataset}.skan_schema_input_table` AS
+  SELECT
+    app_id,
+    skan_conversion_value,
+    skan_event_count,
+    skan_event_value_low,
+    skan_event_value_high,
+    skan_event_value_mean,
+    skan_mapped_event
+  FROM `{skan_schema_input_table}`;
+  """
+  context = execution_context.ExecutionContext(query_parameters=config.params)
+  bigquery_executor.execute(title='skan_schema', query=query, context=context)
 
 
 def generate_placeholder_schema(
@@ -115,7 +119,7 @@ def generate_placeholder_schema(
               "" AS skan_mapped_event
             LIMIT 1
         """
-  bigquery_executor.execute('skan_schema', query)
+  bigquery_executor.execute(title='skan_schema', query=query)
 
 
 def main():

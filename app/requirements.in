@@ -1,8 +1,7 @@
-google-ads-api-report-fetcher[bq]
+google-ads-api-report-fetcher[bq]>=1.18.2
 db-dtypes
 pyyaml
 google-api-python-client==2.80.0
 urllib3==1.26.18  # remedy for pkg_resources.ContextualVersionConflict bug
 smart_open[gcs]
-garf_youtube_data_api
-garf-executors[bq]
+garf-executors[bq]>=1.2.1
