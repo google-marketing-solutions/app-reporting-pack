@@ -19,7 +19,7 @@ SELECT
     campaign.id AS campaign_id,
     campaign.name AS campaign_name,
     campaign.status AS campaign_status,
-    campaign.start_date AS campaign_start_date,
+    campaign.start_date_time AS campaign_start_date,
     ad_group.id AS ad_group_id,
     ad_group.name AS ad_group_name,
     ad_group.status AS ad_group_status

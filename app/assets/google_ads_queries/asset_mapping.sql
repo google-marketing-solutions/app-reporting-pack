@@ -24,6 +24,7 @@ SELECT
     asset.image_asset.full_size.width_pixels AS width,
     asset.image_asset.full_size.url AS url,
     asset.type AS type,
+    asset.orientation AS orientation,
     asset.image_asset.mime_type AS mime_type,
     asset.youtube_video_asset.youtube_video_id AS youtube_video_id,
     asset.youtube_video_asset.youtube_video_title AS youtube_video_title,

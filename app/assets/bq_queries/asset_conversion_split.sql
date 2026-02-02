@@ -32,13 +32,6 @@ AS (
         ON AP.ad_group_id = M.ad_group_id
       GROUP BY 1, 2
     ),
-    VideoOrientation AS (
-      SELECT
-        video_id,
-        ANY_VALUE(video_orientation) AS video_orientation
-      FROM `{bq_dataset}.video_orientation`
-      GROUP BY 1
-    ),
     MappingTable AS (
       SELECT
         M.ad_group_id,
@@ -114,11 +107,11 @@ AS (
       WHEN 'TEXT' THEN ''
       WHEN 'IMAGE' THEN CONCAT(A.height, 'x', A.width)
       WHEN 'MEDIA_BUNDLE' THEN CONCAT(A.height, 'x', A.width)
-      WHEN 'YOUTUBE_VIDEO' THEN VO.video_orientation
+      WHEN 'YOUTUBE_VIDEO' THEN A.orientation
       ELSE NULL
       END AS asset_orientation,
     ROUND(VD.video_duration / 1000) AS video_duration,
-    0 AS video_aspect_ratio,
+    A.orientation AS orientation,
     A.type AS asset_type,
     `{bq_dataset}.ConvertAssetFieldType`(AP.field_type) AS field_type,
     R.performance_label AS performance_label,
@@ -129,7 +122,7 @@ AS (
       WHEN 'IMAGE' THEN `{bq_dataset}.BinBanners`(A.height, A.width)
       WHEN 'MEDIA_BUNDLE'
         THEN `{bq_dataset}.BinBanners`(A.height, A.width)
-      WHEN 'YOUTUBE_VIDEO' THEN VO.video_orientation
+      WHEN 'YOUTUBE_VIDEO' THEN A.orientation
       END AS asset_dimensions,
     `{bq_dataset}.ConvertAdNetwork`(AP.network) AS network,
     CM.conversion_type AS conversion_category,
@@ -160,8 +153,6 @@ AS (
     ON AP.asset_id = A.id
   LEFT JOIN VideoDurations AS VD
     ON A.youtube_video_id = VD.video_id
-  LEFT JOIN VideoOrientation AS VO
-    ON A.youtube_video_id = VO.video_id
   GROUP BY
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34

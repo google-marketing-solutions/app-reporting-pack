@@ -104,7 +104,7 @@ AS (
     ACS.start_date AS start_date,
     DATE_DIFF(
       CURRENT_DATE(),
-      PARSE_DATE('%Y-%m-%d', ACS.start_date),
+      DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', ACS.start_date)),
       DAY) AS days_since_start_date,
     ACS.n_of_target_conversions,
     `{bq_dataset}.NormalizeMillis`(B.budget_amount) AS current_budget_amount,

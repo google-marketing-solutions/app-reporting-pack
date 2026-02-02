@@ -126,15 +126,9 @@ AS (
         ANY_VALUE(youtube_video_id) AS youtube_video_id,
         ANY_VALUE(deep_link_uri) AS deep_link_uri,
         ANY_VALUE(height) AS height,
-        ANY_VALUE(width) AS width
+        ANY_VALUE(width) AS width,
+        ANY_VALUE(orientation) AS orientation
       FROM `{bq_dataset}.asset_mapping`
-      GROUP BY 1
-    ),
-    VideoOrientation AS (
-      SELECT
-        video_id,
-        ANY_VALUE(video_orientation) AS video_orientation
-      FROM `{bq_dataset}.video_orientation`
       GROUP BY 1
     ),
     ConversionMapping AS (
@@ -217,15 +211,9 @@ AS (
             '/hqdefault.jpg')
       ELSE NULL
       END AS asset_preview_link,
-    CASE A.type
-      WHEN 'TEXT' THEN ''
-      WHEN 'IMAGE' THEN CONCAT(A.height, 'x', A.width)
-      WHEN 'MEDIA_BUNDLE' THEN CONCAT(A.height, 'x', A.width)
-      WHEN 'YOUTUBE_VIDEO' THEN VO.video_orientation
-      ELSE NULL
-      END AS asset_orientation,
+    A.orientation AS asset_orientation,
     ROUND(VD.video_duration / 1000) AS video_duration,
-    0 AS video_aspect_ratio,
+    A.orientation AS orientation,
     A.type AS asset_type,
     `{bq_dataset}.ConvertAssetFieldType`(AP.field_type) AS field_type,
     R.performance_label AS performance_label,
@@ -236,7 +224,7 @@ AS (
       WHEN 'IMAGE' THEN `{bq_dataset}.BinBanners`(A.height, A.width)
       WHEN 'MEDIA_BUNDLE'
         THEN `{bq_dataset}.BinBanners`(A.height, A.width)
-      WHEN 'YOUTUBE_VIDEO' THEN VO.video_orientation
+      WHEN 'YOUTUBE_VIDEO' THEN A.orientation
       END AS asset_dimensions,
     `{bq_dataset}.ConvertAdNetwork`(AP.network) AS network,
     SUM(AP.clicks) AS clicks,
@@ -298,8 +286,6 @@ AS (
     ON AP.asset_id = A.id
   LEFT JOIN VideoDurations AS VD
     ON A.youtube_video_id = VD.video_id
-  LEFT JOIN VideoOrientation AS VO
-    ON A.youtube_video_id = VO.video_id
   LEFT JOIN `{bq_dataset}.AssetCohorts` AS AC
     ON
       PARSE_DATE('%Y-%m-%d', AP.date) = AC.day_of_interaction

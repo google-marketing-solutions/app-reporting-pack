@@ -21,7 +21,7 @@ SELECT
     metrics.cost_micros AS cost,
     metrics.engagements AS engagements,
     metrics.view_through_conversions AS view_through_conversions,
-    metrics.video_views AS video_views,
+    metrics.video_trueview_views AS video_views,
     metrics.conversions_value AS conversions_value
 FROM ad_group
 WHERE

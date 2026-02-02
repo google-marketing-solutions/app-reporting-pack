@@ -65,23 +65,6 @@ check_billing() {
   fi
 }
 
-generate_youtube_api_key() {
-  gcloud projects add-iam-policy-binding $PROJECT_ID --member="user:$USER_EMAIL" --role roles/serviceusage.apiKeysAdmin
-  curl -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" \
-    https://apikeys.googleapis.com/v2/projects/$PROJECT_NUMBER/locations/global/keys -X POST -d '{"displayName" : "ARP YouTube Data API Key", "restrictions": {"api_targets": [{"service": "youtube.googleapis.com"}]}}'
-}
-
-get_key() {
-  key_name=`curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" https://apikeys.googleapis.com/v2/projects/$PROJECT_NUMBER/locations/global/keys | grep -B1 "ARP YouTube Data API Key" | head -n 1 | cut -d '"' -f4`
-  if [ -z $key_name ]; then
-    key=''
-  else
-    key=`curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" https://apikeys.googleapis.com/v2/$key_name/keyString | grep keyString | cut -d '"' -f4`
-  echo $key
-  fi
-
-}
-
 copy_application_scripts() {
   echo "Copying application files to $GCS_BASE_PATH"
   gsutil rsync -r -x ".*/__pycache__/.*|[.].*" ./../app $GCS_BASE_PATH
@@ -133,7 +116,6 @@ enable_apis() {
   gcloud services enable eventarc.googleapis.com
   gcloud services enable cloudscheduler.googleapis.com
   gcloud services enable googleads.googleapis.com
-  gcloud services enable youtube.googleapis.com
 }
 
 
@@ -192,14 +174,6 @@ create_topic() {
 
 
 deploy_cf() {
-  YOUTUBE_API_KEY=$(get_key)
-  if [[ -z $YOUTUBE_API_KEY ]]; then
-    echo "Generating new API key"
-    generate_youtube_api_key
-    YOUTUBE_API_KEY=$(get_key)
-  else
-    echo "Reusing existing API key"
-  fi
   echo "Deploying Cloud Function"
   CF_REGION=$(git config -f $SETTING_FILE function.region)
   CF_NAME=$(eval echo $(git config -f $SETTING_FILE function.name))

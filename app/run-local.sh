@@ -48,8 +48,8 @@ solution_name="App Reporting Pack"
 solution_name_lowercase=$(echo $solution_name | tr '[:upper:]' '[:lower:]' |\
   tr ' ' '_')
 
-API_VERSION="21"
-supported_api_versions="19 20 21"
+API_VERSION="23"
+supported_api_versions="23"
 quiet="n"
 generate_config_only="n"
 validate_ads_config="n"
@@ -434,10 +434,6 @@ run_with_config() {
     check_missing_incremental_snapshot "asset_performance"
     define_runtime_config "asset_performance"
     run_google_ads_queries "assets" $runtime_config
-    echo -e "${COLOR}===getting video orientation===${NC}"
-    $(which python3) $(dirname $0)/scripts/fetch_video_orientation.py \
-      -c=$config_file \
-      --ads-config=$ads_config --log=$loglevel --api-version=$API_VERSION
     infer_answer_from_config $config_file backfill
     if [[ $backfill = "y" ]]; then
       echo -e "${COLOR}===backfilling asset cohort snapshots===${NC}"

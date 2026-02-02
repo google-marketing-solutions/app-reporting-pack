@@ -18,7 +18,7 @@ SELECT
     campaign.app_campaign_setting.app_id AS app_id,
     campaign.app_campaign_setting.app_store AS app_store,
     campaign.app_campaign_setting.bidding_strategy_goal_type AS bidding_strategy,
-    campaign.start_date AS start_date,
+    campaign.start_date_time AS start_date,
     campaign.selective_optimization.conversion_actions AS target_conversions
 FROM campaign
 WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"
