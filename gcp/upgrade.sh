@@ -69,10 +69,10 @@ _check_section_presense() {
 
 
 check_installation() {
-    gsutil -q stat $CGS_APP_CONFIG_FILE
+    gcloud storage objects list --stat --fetch-encrypted-object-hashes $CGS_APP_CONFIG_FILE
     config_exists=$?
     if [[ $config_exists -eq 0 ]]; then
-        gsutil cat $CGS_APP_CONFIG_FILE | tee /tmp/arp.yaml
+        gcloud storage cat $CGS_APP_CONFIG_FILE | tee /tmp/arp.yaml
     else
         echo "App reporting pack isn't installed in project $PROJECT_ID"
         echo "Please install it with './gcp/install.sh' command."
@@ -112,4 +112,3 @@ echo -e "${CYAN}Upgrading application...${WHITE}"
 ./gcp/setup.sh copy_application_scripts build_docker_image
 
 popd >/dev/null
-

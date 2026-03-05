@@ -102,7 +102,7 @@ parse_yaml() {
    local yaml_file="$1"
    local prefix="$2"
    if [[ $yaml_file =~ "gs://" ]]; then
-     gsutil cat $yaml_file > /tmp/remote_app_reporting_pack.yaml
+     gcloud storage cat $yaml_file > /tmp/remote_app_reporting_pack.yaml
      yaml_file=/tmp/remote_app_reporting_pack.yaml
    fi
    while read line; do

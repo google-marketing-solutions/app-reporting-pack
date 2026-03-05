@@ -26,7 +26,7 @@ gcloud logging write $LOG_NAME "[$(hostname)] Starting application (gcs_source_u
 # fetch application files from GCS
 if [[ -n $gcs_source_uri ]]; then
   folder_name=$(basename "$gcs_source_uri")
-  gsutil -m cp -R $gcs_source_uri .
+  gcloud storage cp --recursive $gcs_source_uri .
   mv $folder_name/* .
 fi
 
@@ -52,7 +52,7 @@ create_dashboard_url=$(curl -H Metadata-Flavor:Google http://metadata.google.int
 if [[ $exitcode -eq 0 && -n "$gcs_base_path_public" && -n "$create_dashboard_url" ]]; then
   echo "{\"dashboardUrl\":\"$create_dashboard_url\"}" > dashboard.json
   echo "Created dashboard.json with cloning url: $create_dashboard_link"
-  gsutil -h "Content-Type:application/json" -h "Cache-Control: no-store" cp dashboard.json $gcs_base_path_public/dashboard.json
+  gcloud storage cp --content-type="application/json" --cache-control="no-store" dashboard.json $gcs_base_path_public/dashboard.json
 fi
 
 gcloud logging write $LOG_NAME "[$(hostname)] Docker entrypoint script completed"

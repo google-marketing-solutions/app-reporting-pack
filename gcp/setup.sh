@@ -67,20 +67,23 @@ check_billing() {
 
 copy_application_scripts() {
   echo "Copying application files to $GCS_BASE_PATH"
-  gsutil rsync -r -x ".*/__pycache__/.*|[.].*" ./../app $GCS_BASE_PATH
+  gcloud storage rsync --recursive --exclude ".*/__pycache__/.*|[.].*" ./../app $GCS_BASE_PATH
 }
 
 copy_application_config() {
   echo "Copying configs to $GCS_BASE_PATH"
-  gsutil -h "Content-Type:text/plain" cp ./../app/$APP_CONFIG_FILE $GCS_BASE_PATH/
+  gcloud storage cp ./../app/$APP_CONFIG_FILE $GCS_BASE_PATH/
+  gcloud storage objects update "$GCS_BASE_PATH/$APP_CONFIG_FILE" --content-type="text/plain"
 }
 
 copy_googleads_config() {
   echo 'Copying google-ads.yaml to GCS'
   if [[ -f ./../google-ads.yaml ]]; then
-    gsutil -h "Content-Type:text/plain" cp ./../google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
+    gcloud storage cp ./../google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
+    gcloud storage objects update "$GCS_BASE_PATH/google-ads.yaml" --content-type="text/plain"
   elif [[ -f $HOME/google-ads.yaml ]]; then
-    gsutil -h "Content-Type:text/plain" cp $HOME/google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
+    gcloud storage cp $HOME/google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
+    gcloud storage objects update "$GCS_BASE_PATH/google-ads.yaml" --content-type="text/plain"
   else
     echo "Please upload google-ads.yaml"
   fi
@@ -88,13 +91,13 @@ copy_googleads_config() {
 
 deploy_files() {
   echo 'Deploying files to GCS'
-  if ! gsutil ls gs://$PROJECT_ID > /dev/null 2> /dev/null; then
+  if ! gcloud storage ls gs://$PROJECT_ID > /dev/null 2> /dev/null; then
     echo "Creating GCS bucket gs://$PROJECT_ID"
-    gsutil mb -b on gs://$PROJECT_ID
+    gcloud storage buckets create --uniform-bucket-level-access gs://$PROJECT_ID
   fi
 
   echo "Removing existing files at $GCS_BASE_PATH"
-  gsutil rm -r $GCS_BASE_PATH/
+  gcloud storage rm --recursive $GCS_BASE_PATH/
 
   copy_application_scripts
   copy_application_config
@@ -232,19 +235,20 @@ deploy_cf() {
 deploy_public_index() {
   echo 'Deploying index.html to GCS'
 
-  if ! gsutil ls gs://$PROJECT_ID-public > /dev/null 2> /dev/null; then
-    gsutil mb -b on gs://$PROJECT_ID-public
+  if ! gcloud storage ls gs://$PROJECT_ID-public > /dev/null 2> /dev/null; then
+    gcloud storage buckets create --uniform-bucket-level-access gs://$PROJECT_ID-public
   fi
 
-  gsutil iam ch -f allUsers:objectViewer gs://${PROJECT_ID}-public 2> /dev/null
+  gcloud storage buckets add-iam-policy-binding gs://${PROJECT_ID}-public --member=allUsers --role=roles/storage.objectViewer 2> /dev/null
   exitcode=$?
   if [ $exitcode -ne 0 ]; then
     echo -e "${RED}[ ! ] Could not add public access to public cloud bucket${NC}"
   else
     GCS_BASE_PATH_PUBLIC=gs://${PROJECT_ID}-public/$NAME
-    gsutil -h "Content-Type:text/html" -h "Cache-Control: no-store" cp "${SCRIPT_PATH}/index.html" $GCS_BASE_PATH_PUBLIC/index.html
-    if gsutil ls $GCS_BASE_PATH_PUBLIC/dashboard.json >/dev/null 2> /dev/null; then
-      gsutil rm $GCS_BASE_PATH_PUBLIC/dashboard.json
+    gcloud storage cp "${SCRIPT_PATH}/index.html" $GCS_BASE_PATH_PUBLIC/index.html
+    gcloud storage objects update "$GCS_BASE_PATH_PUBLIC/index.html" --content-type="text/html" --cache-control="no-store"
+    if gcloud storage ls $GCS_BASE_PATH_PUBLIC/dashboard.json >/dev/null 2> /dev/null; then
+      gcloud storage rm $GCS_BASE_PATH_PUBLIC/dashboard.json
     fi
   fi
 }
@@ -390,7 +394,7 @@ deploy_all() {
 
 _upload_install_log() {
   if [[ -f "/tmp/${NAME}_installer.log" ]]; then
-    gsutil cp /tmp/${NAME}_installer.log gs://$PROJECT_ID/$NAME/
+    gcloud storage cp /tmp/${NAME}_installer.log gs://$PROJECT_ID/$NAME/
     rm "/tmp/${NAME}_installer.log"
   fi
 }
