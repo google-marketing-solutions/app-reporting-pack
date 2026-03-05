@@ -72,18 +72,15 @@ copy_application_scripts() {
 
 copy_application_config() {
   echo "Copying configs to $GCS_BASE_PATH"
-  gcloud storage cp ./../app/$APP_CONFIG_FILE $GCS_BASE_PATH/
-  gcloud storage objects update "$GCS_BASE_PATH/$APP_CONFIG_FILE" --content-type="text/plain"
+  gcloud storage cp ./../app/$APP_CONFIG_FILE $GCS_BASE_PATH/ --content-type="text/plain"
 }
 
 copy_googleads_config() {
   echo 'Copying google-ads.yaml to GCS'
   if [[ -f ./../google-ads.yaml ]]; then
-    gcloud storage cp ./../google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
-    gcloud storage objects update "$GCS_BASE_PATH/google-ads.yaml" --content-type="text/plain"
+    gcloud storage cp ./../google-ads.yaml $GCS_BASE_PATH/google-ads.yaml --content-type="text/plain"
   elif [[ -f $HOME/google-ads.yaml ]]; then
-    gcloud storage cp $HOME/google-ads.yaml $GCS_BASE_PATH/google-ads.yaml
-    gcloud storage objects update "$GCS_BASE_PATH/google-ads.yaml" --content-type="text/plain"
+    gcloud storage cp $HOME/google-ads.yaml $GCS_BASE_PATH/google-ads.yaml --content-type="text/plain"
   else
     echo "Please upload google-ads.yaml"
   fi
@@ -245,8 +242,7 @@ deploy_public_index() {
     echo -e "${RED}[ ! ] Could not add public access to public cloud bucket${NC}"
   else
     GCS_BASE_PATH_PUBLIC=gs://${PROJECT_ID}-public/$NAME
-    gcloud storage cp "${SCRIPT_PATH}/index.html" $GCS_BASE_PATH_PUBLIC/index.html
-    gcloud storage objects update "$GCS_BASE_PATH_PUBLIC/index.html" --content-type="text/html" --cache-control="no-store"
+    gcloud storage cp "${SCRIPT_PATH}/index.html" $GCS_BASE_PATH_PUBLIC/index.html --content-type="text/html" --cache-control="no-store"
     if gcloud storage ls $GCS_BASE_PATH_PUBLIC/dashboard.json >/dev/null 2> /dev/null; then
       gcloud storage rm $GCS_BASE_PATH_PUBLIC/dashboard.json
     fi
