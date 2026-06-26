@@ -77,7 +77,7 @@ AS (
       LEFT JOIN `{bq_dataset}.ConversionLagAdjustments` AS LA
         ON PARSE_DATE('%Y-%m-%d', CS.date) = LA.adjustment_date
           AND CS.network = LA.network
-          AND CS.conversion_id = LA.conversion_id
+          AND CS.conversion_id = SAFE_CAST(LA.conversion_id AS INT64)
       GROUP BY 1, 2, 3, 4, 5
     ),
     VideoDurations AS (
@@ -172,7 +172,7 @@ AS (
     M.campaign_id,
     M.campaign_name,
     M.campaign_status,
-    ACS.campaign_sub_type,
+    ACS.campaign_type,
     IFNULL(G.geos, 'All') AS geos,
     IFNULL(G.languages, 'All') AS languages,
     ACS.app_id,
@@ -236,14 +236,14 @@ AS (
         ACS.bidding_strategy IN ('Installs', 'Installs Advanced'),
         0,
         `{bq_dataset}.NormalizeMillis`(AP.cost))) AS cost_non_install_campaigns,
-    SUM(IF(ACS.bidding_strategy = 'Installs', AP.installs, AP.inapps))
-      AS conversions,
+    SUM(AP.conversions) AS conversions,
     SUM(AP.installs) AS installs,
     SUM(CS.installs_adjusted) AS installs_adjusted,
     SUM(AP.inapps) AS inapps,
     SUM(CS.inapps_adjusted) AS inapps_adjusted,
     SUM(AP.view_through_conversions) AS view_through_conversions,
     SUM(AP.conversions_value) AS conversions_value,
+    SUM(AP.video_trueview_views) AS video_trueview_views,
     {% for custom_conversion in custom_conversions %}
     {% for conversion_alias, conversion_name in custom_conversion.items() %}
     SUM(COALESCE(CCS.conversions_{{conversion_alias}}, 0))
@@ -304,3 +304,4 @@ AS (
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 );
+

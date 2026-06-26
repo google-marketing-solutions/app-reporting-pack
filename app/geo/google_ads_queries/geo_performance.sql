@@ -26,6 +26,6 @@ SELECT
     metrics.conversions_value AS conversions_value
 FROM user_location_view
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND segments.date >= "{start_date}"
     AND segments.date <= "{end_date}"

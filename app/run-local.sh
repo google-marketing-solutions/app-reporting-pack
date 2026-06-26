@@ -53,7 +53,7 @@ supported_api_versions="23"
 quiet="n"
 generate_config_only="n"
 validate_ads_config="n"
-modules="core,assets,disapprovals,ios_skan,geo"
+modules="core,assets,disapprovals,ios_skan,geo,aggregate,overwrite_tables"
 incremental="y"
 backfill="y"
 
@@ -123,7 +123,7 @@ case $1 in
 done
 
 # Specify customer ids query that fetch data only from accounts that have at least one app campaign in them.
-customer_ids_query='SELECT customer.id FROM campaign WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"'
+customer_ids_query='SELECT customer.id FROM campaign WHERE campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH", "VIDEO", "DISPLAY")'
 
 if [[ ! -z $api_version ]]; then
   validate_api_version $api_version
@@ -151,6 +151,9 @@ reset_snapshot_data() {
     fi
     if [[ $modules =~ "ios_skan" ]]; then
       delete_incremental_snapshots "skan_decoder"
+    fi
+    if [[ $modules =~ "aggregate" ]]; then
+      delete_incremental_snapshots "aaggregate_performance"
     fi
     echo -e "${COLOR}Incremental performance snapshots were removed${NC}"
     if [[ $quiet = "y" ]]; then
@@ -468,6 +471,17 @@ run_with_config() {
     $(which python3) $(dirname $0)/scripts/create_skan_schema.py -c=$config_file
     run_bq_queries "ios_skan"
     fi
+  fi
+  if [[ $modules =~ "aggregate" ]]; then
+    echo -e "${COLOR}===Running 'aggregate' module===${NC}"
+    check_initial_load "aggregate_performance"
+    check_missing_incremental_snapshot "aggregate_performance"
+    define_runtime_config "aggregate_performance"
+    run_bq_queries "aggregate"
+  fi
+  if [[ $modules =~ "overwrite_tables" ]]; then
+    echo -e "${COLOR}===Running 'overwrite_tables' module===${NC}"
+    run_bq_queries "overwrite_tables"
   fi
   upload_last_run_to_bq
 }

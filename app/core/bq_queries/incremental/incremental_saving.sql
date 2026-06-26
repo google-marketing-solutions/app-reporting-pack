@@ -46,6 +46,7 @@ AS (
     inapps_adjusted,
     view_through_conversions,
     video_views,
+    video_trueview_views,
     conversions_value,
     {% for custom_conversion in custom_conversions %}
     {% for conversion_alias, conversion_name in custom_conversion.items() %}
@@ -91,6 +92,7 @@ AS (
     inapps_adjusted,
     view_through_conversions,
     video_views,
+    video_trueview_views,
     conversions_value,
     {% for custom_conversion in custom_conversions %}
     {% for conversion_alias, conversion_name in custom_conversion.items() %}

@@ -26,6 +26,6 @@ SELECT
     metrics.view_through_conversions AS view_through_conversions
 FROM ad_group_ad_asset_view
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND segments.date >= "{start_date}"
     AND segments.date <= "{end_date}"

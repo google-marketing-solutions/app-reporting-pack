@@ -50,7 +50,7 @@ AS (
           PARSE_DATE('%Y-%m-%d', CS.date)
             = LA.adjustment_date
           AND CS.network = LA.network
-          AND CAST(CS.conversion_id AS INT64) = LA.conversion_id
+          AND CS.conversion_id = SAFE_CAST(LA.conversion_id AS INT64)
       GROUP BY 1, 2, 3
     ),
     MappingTable AS (
@@ -120,6 +120,8 @@ AS (
     SUM(CS.inapps_adjusted) AS inapps_adjusted,
     SUM(AP.view_through_conversions) AS view_through_conversions,
     SUM(AP.video_views) AS video_views,
+--        todo temporary video_trueview
+    SUM(AP.video_views) AS video_trueview_views,
     SUM(AP.conversions_value) AS conversions_value,
     {% for custom_conversion in custom_conversions %}
     {% for conversion_alias, conversion_name in custom_conversion.items() %}

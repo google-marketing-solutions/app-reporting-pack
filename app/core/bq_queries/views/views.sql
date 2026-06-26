@@ -23,6 +23,7 @@ AS (
     RawConversionIds AS (
       SELECT
         ACS.campaign_id,
+        ACS.campaign_type,
         ACS.campaign_sub_type,
         ACS.app_id,
         ACS.app_store,
@@ -56,7 +57,7 @@ AS (
         M.conversion_name
       FROM
         `{bq_dataset}.app_campaign_settings` AS ACS,
-        UNNEST(SPLIT(ACS.target_conversions, '|')) AS conversion_ids
+        UNNEST(IFNULL(SPLIT(ACS.target_conversions, '|'), ['__NO_CONVERSION'])) AS conversion_ids
       LEFT JOIN `{bq_dataset}.app_conversions_mapping` AS M
         ON
           SPLIT(conversion_ids, '/')[SAFE_OFFSET(3)]
@@ -95,6 +96,7 @@ AS (
     )
   SELECT
     R.campaign_id,
+    ANY_VALUE(R.campaign_type) AS campaign_type,
     ANY_VALUE(R.campaign_sub_type) AS campaign_sub_type,
     ANY_VALUE(R.app_id) AS app_id,
     ANY_VALUE(R.app_store) AS app_store,

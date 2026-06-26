@@ -18,7 +18,7 @@ SELECT
     language_constant.code AS language
 FROM campaign_criterion
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND campaign_criterion.type = "LANGUAGE"
     AND campaign_criterion.negative = FALSE
 

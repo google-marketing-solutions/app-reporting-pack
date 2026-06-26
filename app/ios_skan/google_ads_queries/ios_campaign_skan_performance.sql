@@ -23,7 +23,7 @@ SELECT
     metrics.sk_ad_network_total_conversions AS skan_postbacks
 FROM campaign
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND campaign.app_campaign_setting.app_store = "APPLE_APP_STORE"
     AND segments.date >= "{start_date}"
     AND segments.date <= "{end_date}"

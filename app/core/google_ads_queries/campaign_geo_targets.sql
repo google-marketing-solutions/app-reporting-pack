@@ -18,6 +18,6 @@ SELECT
     campaign_criterion.type AS type
 FROM campaign_criterion
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND campaign_criterion.type = "LOCATION"
     AND campaign_criterion.negative = FALSE

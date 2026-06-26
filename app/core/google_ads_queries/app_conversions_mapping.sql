@@ -18,5 +18,5 @@ SELECT
     segments.conversion_action_category AS conversion_type,
     segments.conversion_action~0 AS conversion_id
 FROM campaign
-WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"
+WHERE campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
 

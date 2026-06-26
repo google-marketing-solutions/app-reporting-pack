@@ -25,4 +25,4 @@ SELECT
     ad_group.status AS ad_group_status
 FROM
     ad_group
-WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"
+WHERE campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")

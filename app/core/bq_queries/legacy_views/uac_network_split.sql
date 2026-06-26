@@ -50,6 +50,7 @@ SELECT
     inapps,
     inapps_adjusted,
     video_views,
+    video_trueview_views,
     conversions_value AS conversion_value
 FROM
 {% if incremental == "true" %}

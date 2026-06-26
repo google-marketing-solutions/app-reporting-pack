@@ -20,5 +20,5 @@ SELECT
     ad_group_ad.policy_summary.policy_topic_entries:topic AS policy_topics
 FROM ad_group_ad
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND campaign.status = "ENABLED"

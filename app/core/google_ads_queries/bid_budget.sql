@@ -19,5 +19,5 @@ SELECT
     campaign.target_roas.target_roas AS target_roas
 FROM campaign
 WHERE
-    campaign.advertising_channel_type = "MULTI_CHANNEL"
+    campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
     AND campaign.status = "ENABLED"

@@ -18,7 +18,7 @@ SELECT
     account_name AS AccountName,
     account_id,
     ocid AS CID,
-    campaign_sub_type AS CampaignSubType,
+    campaign_type AS CampaignSubType,
     CASE app_store
         WHEN 'GOOGLE_APP_STORE' THEN 'Google Play'
         WHEN 'APPLE_APP_STORE' THEN 'App Store'
@@ -70,19 +70,6 @@ SELECT
         ELSE asset_orientation
         END AS ImageSize,
     asset_orientation AS VideoOrientation,
-    CASE
-        WHEN ROUND(video_aspect_ratio, 2) = 1.78 THEN "16:9"
-        WHEN ROUND(video_aspect_ratio, 2) = 1.50 THEN "3:2"
-        WHEN ROUND(video_aspect_ratio, 2) = 1.33 THEN "4:3"
-        WHEN ROUND(video_aspect_ratio, 2) = 1.25 THEN "5:4"
-        WHEN ROUND(video_aspect_ratio, 2) = 1.00 THEN "1:1"
-        WHEN ROUND(video_aspect_ratio, 2) = 0.80 THEN "4:5"
-        WHEN ROUND(video_aspect_ratio, 2) = 0.75 THEN "3:4"
-        WHEN ROUND(video_aspect_ratio, 2) = 0.67 THEN "2:3"
-        WHEN ROUND(video_aspect_ratio, 2) = 0.56 THEN "9:16"
-        WHEN video_aspect_ratio IS NULL THEN "Unknown"
-        ELSE "Other"
-        END AS video_aspect_ratio,
     CASE
         WHEN ROUND(video_duration) > 31 THEN "31+"
         WHEN ROUND(video_duration) > 25 THEN "26-30"
@@ -185,7 +172,6 @@ WITH AssetMapping AS (
     LinkToCampaign,
     ImageSize,
     VideoOrientation,
-    video_aspect_ratio,
     video_length_bucket,
     RecommendedImage,
     ImageSizeType,
@@ -229,7 +215,6 @@ WITH AssetMapping AS (
     LinkToCampaign,
     ImageSize,
     VideoOrientation,
-    video_aspect_ratio,
     video_length_bucket,
     RecommendedImage,
     ImageSizeType,
@@ -294,7 +279,6 @@ SELECT
   LinkToCampaign,
   ImageSize,
   VideoOrientation,
-  video_aspect_ratio,
   video_length_bucket,
   RecommendedImage,
   ImageSizeType,
@@ -346,7 +330,6 @@ GROUP BY
   LinkToCampaign,
   ImageSize,
   VideoOrientation,
-  video_aspect_ratio,
   video_length_bucket,
   RecommendedImage,
   ImageSizeType,

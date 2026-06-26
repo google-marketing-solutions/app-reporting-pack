@@ -30,4 +30,4 @@ SELECT
     ad_group_ad.ad.app_pre_registration_ad.images AS pre_registration_images,
     ad_group_ad.ad.app_pre_registration_ad.youtube_videos AS pre_registration_videos
 FROM ad_group_ad
-WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"
+WHERE campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")

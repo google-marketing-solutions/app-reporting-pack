@@ -14,6 +14,7 @@
 
 SELECT
     campaign.id AS campaign_id,
+    campaign.advertising_channel_type AS campaign_type,
     campaign.advertising_channel_sub_type AS campaign_sub_type,
     campaign.app_campaign_setting.app_id AS app_id,
     campaign.app_campaign_setting.app_store AS app_store,
@@ -21,4 +22,4 @@ SELECT
     campaign.start_date_time AS start_date,
     campaign.selective_optimization.conversion_actions AS target_conversions
 FROM campaign
-WHERE campaign.advertising_channel_type = "MULTI_CHANNEL"
+WHERE campaign.advertising_channel_type in ("MULTI_CHANNEL", "DEMAND_GEN", "SEARCH")
