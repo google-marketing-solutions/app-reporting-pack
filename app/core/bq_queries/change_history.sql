@@ -46,7 +46,7 @@ AS (
           PARSE_DATE('%Y-%m-%d', CS.date)
             = LA.adjustment_date
           AND CS.network = LA.network
-          AND CS.conversion_id = LA.conversion_id
+          AND CS.conversion_id = SAFE_CAST(LA.conversion_id AS INT64)
       GROUP BY 1, 2, 3
     ),
     CampaignPerformance AS (
