@@ -107,8 +107,8 @@ if (( $OBSOLETE_CONFIG > 0 )); then
     ./gcp/setup.sh copy_application_config
 fi
 
-# deploy solution
+# deploy solution + migrate legacy CF/PubSub/VM stack to Cloud Run Jobs
 echo -e "${CYAN}Upgrading application...${WHITE}"
-./gcp/setup.sh copy_application_scripts build_docker_image
+./gcp/setup.sh deploy_files migrate_to_cloud_run
 
 popd >/dev/null
