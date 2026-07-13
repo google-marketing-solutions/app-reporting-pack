@@ -52,17 +52,18 @@ REPOSITORY=$(eval echo $(git config -f $SETTING_FILE repository.name))
 IMAGE_NAME=$(eval echo $(git config -f $SETTING_FILE repository.image))
 REPOSITORY_LOCATION=$(git config -f $SETTING_FILE repository.location)
 
-# New Cloud Run Job variables (replacing TOPIC)
+# 1. Initialize SERVICE_ACCOUNT first so RUN_SA can safely read it as a default fallback
+SERVICE_ACCOUNT=$PROJECT_NUMBER-compute@developer.gserviceaccount.com
+GCS_BASE_PATH=gs://$PROJECT_ID/$NAME
+
+# 2. New Cloud Run Job variables (replacing legacy VM/Pub-Sub parameters)
 JOB_NAME=$(eval echo $(git config -f $SETTING_FILE cloud-run.name))
 JOB_REGION=$(git config -f $SETTING_FILE cloud-run.region)
 JOB_CPU=$(git config -f $SETTING_FILE cloud-run.cpu)
 JOB_MEMORY=$(git config -f $SETTING_FILE cloud-run.memory)
 JOB_TIMEOUT=$(git config -f $SETTING_FILE cloud-run.task-timeout)
 RUN_SA=$(eval echo $(git config -f $SETTING_FILE cloud-run.service-account))
-RUN_SA=${RUN_SA:-$SERVICE_ACCOUNT}   # default to the compute SA
-
-SERVICE_ACCOUNT=$PROJECT_NUMBER-compute@developer.gserviceaccount.com
-GCS_BASE_PATH=gs://$PROJECT_ID/$NAME
+RUN_SA=${RUN_SA:-$SERVICE_ACCOUNT} # default to the compute SA
 
 check_billing() {
   BILLING_ENABLED=$(gcloud beta billing projects describe $PROJECT_ID --format="csv(billingEnabled)" | tail -n 1)
@@ -112,7 +113,7 @@ deploy_files() {
 enable_apis() {
   echo "Enabling APIs"
   gcloud services enable bigquery.googleapis.com
-  gcloud services enable compute.googleapis.com          # still used for the AR/Cloud Build base; safe to keep
+  gcloud services enable compute.googleapis.com # still used for the AR/Cloud Build base; safe to keep
   gcloud services enable containerregistry.googleapis.com
   gcloud services enable run.googleapis.com
   gcloud services enable cloudresourcemanager.googleapis.com
@@ -171,6 +172,7 @@ deploy_job() {
     sa_flag="--service-account=$RUN_SA"
   fi
 
+  # Mount GCS configurations directly to container /config mount path
   gcloud run jobs deploy $JOB_NAME \
     --image=$IMAGE \
     --region=$JOB_REGION \
@@ -242,7 +244,7 @@ schedule_run() {
   local SCHEDULE_TZ=$(git config -f $SETTING_FILE scheduler.schedule-timezone)
   SCHEDULE_TZ=${SCHEDULE_TZ:-"Etc/UTC"}
 
-  delete_schedule   # existing existence-checked delete, reused unchanged
+  delete_schedule # existing existence-checked delete, reused unchanged
 
   echo 'Scheduling HTTP job to run Cloud Run Job '$JOB_NAME
   gcloud scheduler jobs create http $SCHED_NAME \
