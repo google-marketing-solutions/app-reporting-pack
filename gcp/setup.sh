@@ -52,11 +52,11 @@ REPOSITORY=$(eval echo $(git config -f $SETTING_FILE repository.name))
 IMAGE_NAME=$(eval echo $(git config -f $SETTING_FILE repository.image))
 REPOSITORY_LOCATION=$(git config -f $SETTING_FILE repository.location)
 
-# 1. Initialize SERVICE_ACCOUNT first so RUN_SA can safely read it as a default fallback
+# Initialize SERVICE_ACCOUNT first so RUN_SA can safely read it as a default fallback
 SERVICE_ACCOUNT=$PROJECT_NUMBER-compute@developer.gserviceaccount.com
 GCS_BASE_PATH=gs://$PROJECT_ID/$NAME
 
-# 2. New Cloud Run Job variables (replacing legacy VM/Pub-Sub parameters)
+# New Cloud Run Job variables (replacing legacy VM/Pub-Sub parameters)
 JOB_NAME=$(eval echo $(git config -f $SETTING_FILE cloud-run.name))
 JOB_REGION=$(git config -f $SETTING_FILE cloud-run.region)
 JOB_CPU=$(git config -f $SETTING_FILE cloud-run.cpu)
@@ -367,3 +367,4 @@ else
 fi
 
 popd > /dev/null
+
