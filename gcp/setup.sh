@@ -51,10 +51,19 @@ APP_CONFIG_FILE=$(eval echo $(git config -f $SETTING_FILE config.config-file))
 REPOSITORY=$(eval echo $(git config -f $SETTING_FILE repository.name))
 IMAGE_NAME=$(eval echo $(git config -f $SETTING_FILE repository.image))
 REPOSITORY_LOCATION=$(git config -f $SETTING_FILE repository.location)
-TOPIC=$(eval echo $(git config -f $SETTING_FILE pubsub.topic))
 
+# Initialize SERVICE_ACCOUNT first so RUN_SA can safely read it as a default fallback
 SERVICE_ACCOUNT=$PROJECT_NUMBER-compute@developer.gserviceaccount.com
 GCS_BASE_PATH=gs://$PROJECT_ID/$NAME
+
+# New Cloud Run Job variables (replacing legacy VM/Pub-Sub parameters)
+JOB_NAME=$(eval echo $(git config -f $SETTING_FILE cloud-run.name))
+JOB_REGION=$(git config -f $SETTING_FILE cloud-run.region)
+JOB_CPU=$(git config -f $SETTING_FILE cloud-run.cpu)
+JOB_MEMORY=$(git config -f $SETTING_FILE cloud-run.memory)
+JOB_TIMEOUT=$(git config -f $SETTING_FILE cloud-run.task-timeout)
+RUN_SA=$(eval echo $(git config -f $SETTING_FILE cloud-run.service-account))
+RUN_SA=${RUN_SA:-$SERVICE_ACCOUNT} # default to the compute SA
 
 check_billing() {
   BILLING_ENABLED=$(gcloud beta billing projects describe $PROJECT_ID --format="csv(billingEnabled)" | tail -n 1)
@@ -101,23 +110,18 @@ deploy_files() {
   copy_googleads_config
 }
 
-
 enable_apis() {
   echo "Enabling APIs"
   gcloud services enable bigquery.googleapis.com
-  gcloud services enable compute.googleapis.com
-  #gcloud services enable artifactregistry.googleapis.com
+  gcloud services enable compute.googleapis.com # still used for the AR/Cloud Build base; safe to keep
   gcloud services enable containerregistry.googleapis.com
   gcloud services enable run.googleapis.com
   gcloud services enable cloudresourcemanager.googleapis.com
   gcloud services enable iamcredentials.googleapis.com
   gcloud services enable cloudbuild.googleapis.com
-  gcloud services enable cloudfunctions.googleapis.com
-  gcloud services enable eventarc.googleapis.com
   gcloud services enable cloudscheduler.googleapis.com
   gcloud services enable googleads.googleapis.com
 }
-
 
 create_registry() {
   REPO_EXISTS=$(gcloud artifacts repositories list --location=$REPOSITORY_LOCATION --filter="REPOSITORY=projects/'$PROJECT_ID'/locations/'$REPOSITORY_LOCATION'/repositories/'"$REPOSITORY"'" --format="value(REPOSITORY)" 2>/dev/null)
@@ -134,12 +138,10 @@ create_registry() {
   fi
 }
 
-
 build_docker_image() {
   echo "Building and pushing Docker image to Artifact Registry"
   gcloud builds submit --config=cloudbuild.yaml --substitutions=_REPOSITORY="docker",_IMAGE="$IMAGE_NAME",_REPOSITORY_LOCATION="$REPOSITORY_LOCATION" ./..
 }
-
 
 build_docker_image_gcr() {
   # NOTE: it's an alternative to build_docker_image if you want to use GCR instead of AR
@@ -147,9 +149,9 @@ build_docker_image_gcr() {
   gcloud builds submit --config=cloudbuild-gcr.yaml --substitutions=_IMAGE="$IMAGE_NAME" ./..
 }
 
-
 set_iam_permissions() {
-  required_roles="storage.objectViewer artifactregistry.repoAdmin compute.admin monitoring.editor logging.logWriter iam.serviceAccountTokenCreator iam.serviceAccountUser pubsub.publisher run.invoker"
+  # Reduced roles set (includes BigQuery access, drops legacy VM/Pub-Sub permissions)
+  required_roles="bigquery.dataEditor bigquery.jobUser storage.objectAdmin artifactregistry.reader run.invoker iam.serviceAccountUser"
   echo "Setting up IAM permissions"
   for role in $required_roles; do
     gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -158,76 +160,29 @@ set_iam_permissions() {
       --condition=None \
       --no-user-output-enabled
   done
-  PUBSUB_SERVICE_ACCOUNT="service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com"
-  gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-    --member="serviceAccount:${PUBSUB_SERVICE_ACCOUNT}"\
-    --role='roles/iam.serviceAccountTokenCreator'
 }
 
+deploy_job() {
+  echo "Deploying Cloud Run Job"
+  local IMAGE="$REPOSITORY_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME"
+  local dashboard_url=$(./../app/scripts/create_dashboard.sh -L --config ./../app/$APP_CONFIG_FILE)
 
-create_topic() {
-  TOPIC_EXISTS=$(gcloud pubsub topics list --filter="name=projects/'$PROJECT_ID'/topics/'$TOPIC'" --format="get(name)")
-  if [[ ! -n $TOPIC_EXISTS ]]; then
-    gcloud pubsub topics create $TOPIC
+  local sa_flag=""
+  if [[ -n "$RUN_SA" ]]; then
+    sa_flag="--service-account=$RUN_SA"
   fi
+
+  # Mount GCS configurations directly to container /config mount path
+  gcloud run jobs deploy $JOB_NAME \
+    --image=$IMAGE \
+    --region=$JOB_REGION \
+    --cpu=$JOB_CPU --memory=$JOB_MEMORY \
+    --task-timeout=$JOB_TIMEOUT --max-retries=1 --tasks=1 \
+    $sa_flag \
+    --add-volume=name=cfg,type=cloud-storage,bucket=$PROJECT_ID \
+    --add-volume-mount=volume=cfg,mount-path=/config \
+    --set-env-vars="CONFIG_DIR=/config/$NAME,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GCS_BASE_PATH_PUBLIC=gs://${PROJECT_ID}-public/$NAME,CREATE_DASHBOARD_URL=$dashboard_url"
 }
-
-
-deploy_cf() {
-  echo "Deploying Cloud Function"
-  CF_REGION=$(git config -f $SETTING_FILE function.region)
-  CF_NAME=$(eval echo $(git config -f $SETTING_FILE function.name))
-
-  create_topic
-
-  # create env.yaml from env.yaml.template if it doesn't exist
-  if [ ! -f ./cloud-functions/create-vm/env.yaml ]; then
-    echo "creating env.yaml"
-    cp ./cloud-functions/create-vm/env.yaml.template ./cloud-functions/create-vm/env.yaml
-  fi
-  # initialize env.yaml - environment variables for CF:
-  #   - docker image url
-  url="$REPOSITORY_LOCATION-docker.pkg.dev/$PROJECT_ID/docker/$IMAGE_NAME"
-  sed -i'.bak' -e "s|#*[[:space:]]*DOCKER_IMAGE[[:space:]]*:[[:space:]]*.*$|DOCKER_IMAGE: $url|" ./cloud-functions/create-vm/env.yaml
-  #   - GCE VM name (base)
-  instance=$(eval echo $(git config -f $SETTING_FILE compute.name))
-  sed -i'.bak' -e "s|#*[[:space:]]*INSTANCE_NAME[[:space:]]*:[[:space:]]*.*$|INSTANCE_NAME: $instance|" ./cloud-functions/create-vm/env.yaml
-  #   - GCE machine type
-  machine_type=$(git config -f $SETTING_FILE compute.machine-type)
-  sed -i'.bak' -e "s|#*[[:space:]]*MACHINE_TYPE[[:space:]]*:[[:space:]]*.*$|MACHINE_TYPE: $machine_type|" ./cloud-functions/create-vm/env.yaml
-  #   - GCE Region
-  gce_region=$(git config -f $SETTING_FILE compute.region)
-  sed -i'.bak' -e "s|#*[[:space:]]*REGION[[:space:]]*:[[:space:]]*.*$|REGION: $gce_region|" ./cloud-functions/create-vm/env.yaml
-  #   - GCE Zone
-  gce_zone=$(git config -f $SETTING_FILE compute.zone)
-  sed -i'.bak' -e "s|#*[[:space:]]*ZONE[[:space:]]*:[[:space:]]*.*$|ZONE: $gce_zone|" ./cloud-functions/create-vm/env.yaml
-  #   - NO_PUBLIC_IP
-  no_public_ip=$(git config -f $SETTING_FILE compute.no-public-ip)
-  if [[ $no_public_ip == 'true' ]]; then
-    if grep -q 'NO_PUBLIC_IP' ./cloud-functions/create-vm/env.yaml; then
-      sed -i'.bak' -e "s|^#*[[:space:]]*NO_PUBLIC_IP[[:space:]]*:[[:space:]]*.*$|NO_PUBLIC_IP: 'TRUE'|" ./cloud-functions/create-vm/env.yaml
-    else
-      echo "" >> ./cloud-functions/create-vm/env.yaml && echo "NO_PUBLIC_IP: 'TRUE'" >> ./cloud-functions/create-vm/env.yaml
-    fi
-    enable_private_google_access
-  else
-    sed -i'.bak' -e "s|^NO_PUBLIC_IP[[:space:]]*:|#NO_PUBLIC_IP:|" ./cloud-functions/create-vm/env.yaml
-  fi
-  sed -i'.bak' -e "s|.*GOOGLE_API_KEY:.*|GOOGLE_API_KEY: $YOUTUBE_API_KEY|" ./cloud-functions/create-vm/env.yaml
-
-  # deploy CF (pubsub triggered)
-  gcloud functions deploy $CF_NAME \
-      --trigger-topic=$TOPIC \
-      --entry-point=createInstance \
-      --runtime=nodejs20 \
-      --timeout=540s \
-      --region=$CF_REGION \
-      --quiet \
-      --gen2 \
-      --env-vars-file ./cloud-functions/create-vm/env.yaml \
-      --source=./cloud-functions/create-vm/
-}
-
 
 deploy_public_index() {
   echo 'Deploying index.html to GCS'
@@ -249,57 +204,12 @@ deploy_public_index() {
   fi
 }
 
-
-get_run_data() {
-  local dashboard_url="$1"
-  # arguments for the CF (to be passed via pubsub message or scheduler job's arguments):
-  #   * project_id
-  #   * machine_type
-  #   * service_account
-  #   * docker_image - a docker image url, can be CR or AR
-  #       gcr.io/$PROJECT_ID/workload
-  #       europe-docker.pkg.dev/$PROJECT_ID/docker/workload
-  #   * vm - an object with attributes for VM (they will be passed to main.sh via VM's metadata):
-  #     * gcs_source_uri
-  #     * gcs_base_path_public
-  #     * create_dashboard_link
-  #     * delete_vm - by default it's TRUE (set inside create-vm CF)
-  GCS_BASE_PATH=gs://$PROJECT_ID/$NAME
-  GCS_BASE_PATH_PUBLIC=gs://${PROJECT_ID}-public/$NAME
-
-  # NOTE for the commented code:
-  # currently deploy_cf target puts a docker image url into env.yaml for CF, so there's no need to pass an image url via arguments,
-  # but if you want to support several images simultaneously (e.g. with different tags) then image url can be passed via message as:
-  #  "docker_image": "'$REPOSITORY_LOCATION'-docker.pkg.dev/'$PROJECT_ID'/docker/'$IMAGE_NAME'",
-  # if you need to prevent VM deletion add this:
-  #  "delete_vm": "FALSE"
-  data='{
-    "vm": {
-      "gcs_source_uri": "'$GCS_BASE_PATH'",
-      "gcs_base_path_public": "'$GCS_BASE_PATH_PUBLIC'",
-      "create_dashboard_url": "'$dashboard_url'",
-      "delete_vm": "TRUE"
-    }
-  }'
-  echo $data
-}
-
-get_run_data_escaped() {
-  local DATA=$(get_run_data)
-  ESCAPED_DATA="$(echo "$DATA" | sed 's/"/\\"/g')"
-  echo $ESCAPED_DATA
-}
-
-
 start() {
-  # example:
-  # --message="{\"project_id\":\"$PROJECT_ID\", \"docker_image\":\"europe-docker.pkg.dev/$PROJECT_ID/docker/workload\", \"service_account\":\"$SERVICE_ACCOUNT\"}"
-
   dashboard_url=$(./../app/scripts/create_dashboard.sh -L --config ./../app/$APP_CONFIG_FILE)
 
-  local DATA=$(get_run_data $dashboard_url)
-  echo 'Publishing a pubsub with args: '$DATA
-  gcloud pubsub topics publish $TOPIC --message="$DATA"
+  echo 'Executing Cloud Run Job '$JOB_NAME
+  # async: don't block install on a large first run; user watches check_logs.sh.
+  gcloud run jobs execute $JOB_NAME --region=$JOB_REGION
 
   # Check if there is a public bucket and index.html and echo the url
   local PUBLIC_URL=$(print_public_gcs_url)/index.html
@@ -327,25 +237,24 @@ print_public_gcs_url() {
 }
 
 schedule_run() {
-  JOB_NAME=$(eval echo $(git config -f $SETTING_FILE scheduler.name))
-  REGION=$(git config -f $SETTING_FILE scheduler.region)
-  SCHEDULE=$(git config -f $SETTING_FILE scheduler.schedule)
-  SCHEDULE=${SCHEDULE:-"0 0 * * *"} # by default at midnight
-  SCHEDULE_TZ=$(git config -f $SETTING_FILE scheduler.schedule-timezone)
+  local SCHED_NAME=$(eval echo $(git config -f $SETTING_FILE scheduler.name))
+  local REGION=$(git config -f $SETTING_FILE scheduler.region)
+  local SCHEDULE=$(git config -f $SETTING_FILE scheduler.schedule)
+  SCHEDULE=${SCHEDULE:-"0 0 * * *"}
+  local SCHEDULE_TZ=$(git config -f $SETTING_FILE scheduler.schedule-timezone)
   SCHEDULE_TZ=${SCHEDULE_TZ:-"Etc/UTC"}
-  local DATA=$(get_run_data)
 
-  delete_schedule
+  delete_schedule # existing existence-checked delete, reused unchanged
 
-  echo 'Scheduling a job with args: '$DATA
-  gcloud scheduler jobs create pubsub $JOB_NAME \
-    --schedule="$SCHEDULE" \
+  echo 'Scheduling HTTP job to run Cloud Run Job '$JOB_NAME
+  gcloud scheduler jobs create http $SCHED_NAME \
     --location=$REGION \
-    --topic=$TOPIC \
-    --message-body="$DATA" \
-    --time-zone=$SCHEDULE_TZ
+    --schedule="$SCHEDULE" \
+    --time-zone=$SCHEDULE_TZ \
+    --uri="https://run.googleapis.com/v2/projects/${PROJECT_ID}/locations/${JOB_REGION}/jobs/${JOB_NAME}:run" \
+    --http-method=POST \
+    --oauth-service-account-email=${RUN_SA}
 }
-
 
 delete_schedule() {
   JOB_NAME=$(eval echo $(git config -f $SETTING_FILE scheduler.name))
@@ -356,11 +265,6 @@ delete_schedule() {
     echo 'Deleting Cloud Scheduler job '$JOB_NAME
     gcloud scheduler jobs delete $JOB_NAME --location $REGION --quiet
   fi
-}
-
-enable_private_google_access() {
-  REGION=$(git config -f $SETTING_FILE compute.region)
-  gcloud compute networks subnets update default --region=$REGION --enable-private-ip-google-access
 }
 
 check_owners() {
@@ -375,7 +279,6 @@ check_owners() {
   fi
 }
 
-
 deploy_all() {
   check_owners
   check_billing
@@ -384,8 +287,54 @@ deploy_all() {
   deploy_files
   create_registry
   build_docker_image
-  deploy_cf
+  deploy_job
   schedule_run
+}
+
+migrate_to_cloud_run() {
+  echo "Migrating legacy Cloud Function + Pub/Sub + VM stack to Cloud Run Jobs"
+  local CF_NAME="create-${NAME}-vm"
+  local OLD_TOPIC="run-${NAME}"
+  local CF_REGION="europe-west1"
+  local SCHED_NAME=$(eval echo $(git config -f $SETTING_FILE scheduler.name))
+  local SCHED_REGION=$(git config -f $SETTING_FILE scheduler.region)
+
+  # 1) delete the legacy pubsub-type scheduler job ONLY (http = already migrated)
+  if gcloud scheduler jobs describe "$SCHED_NAME" --location="$SCHED_REGION" >/dev/null 2>&1; then
+    local TARGET=$(gcloud scheduler jobs describe "$SCHED_NAME" --location="$SCHED_REGION" \
+      --format='value(pubsubTarget.topicName)')
+    if [[ -n "$TARGET" ]]; then
+      gcloud scheduler jobs delete "$SCHED_NAME" --location="$SCHED_REGION" --quiet
+    fi
+  fi
+
+  # 2) delete the legacy Cloud Function
+  if [[ -n "$CF_NAME" ]] && \
+     gcloud functions describe "$CF_NAME" --region="$CF_REGION" --gen2 >/dev/null 2>&1; then
+    gcloud functions delete "$CF_NAME" --region="$CF_REGION" --gen2 --quiet
+  fi
+
+  # 3) delete the legacy Pub/Sub topic
+  if [[ -n "$OLD_TOPIC" ]] && gcloud pubsub topics describe "$OLD_TOPIC" >/dev/null 2>&1; then
+    gcloud pubsub topics delete "$OLD_TOPIC" --quiet
+  fi
+
+  # 4) stand up the new stack (idempotent: deploy_job / schedule_run create-or-update)
+  set_iam_permissions
+  build_docker_image
+  deploy_job
+  schedule_run
+  echo "Migration to Cloud Run Jobs complete. Old roles (compute.admin, pubsub.*) can be"
+  echo "revoked with: ./gcp/setup.sh tighten_iam"
+}
+
+# OPT-IN, never called automatically: revoke roles the old model needed.
+tighten_iam() {
+  for role in compute.admin pubsub.publisher monitoring.editor logging.logWriter; do
+    gcloud projects remove-iam-policy-binding $PROJECT_ID \
+      --member=serviceAccount:$SERVICE_ACCOUNT \
+      --role=roles/$role --condition=None --no-user-output-enabled 2>/dev/null || true
+  done
 }
 
 _upload_install_log() {
@@ -399,7 +348,6 @@ _list_functions() {
   # list all functions in this file not starting with "_"
   declare -F | awk '{print $3}' | grep -v "^_"
 }
-
 
 if [[ $# -eq 0 ]]; then
   _list_functions
